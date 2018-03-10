@@ -1,9 +1,7 @@
 #include "malloc.h"
 #include <assert.h>
 
-
-int main(int argc, char **argv)
-{
+void *test() {
   size_t size = 34;
   size_t big = 2032;
 
@@ -57,6 +55,20 @@ int main(int argc, char **argv)
   void *mem10 = malloc(107360);
   printf("Successfully malloc'd block %p of size 107360 \n", mem10);
   assert(mem10 != NULL);
+
+  return NULL;
+}
+
+int main(int argc, char **argv) {
+  pthread_t p1, p2;
+  printf("main: begin\n");
+  pthread_create(&p1, NULL, test, NULL);
+  pthread_create(&p2, NULL, test, NULL);
+  // join waits for the threads to finish
+  pthread_join(p1, NULL);
+  pthread_join(p2, NULL);
+  printf("main: end\n");
+  //pthread_join(malloc_thread2,NULL);
 
   return 0;
 }

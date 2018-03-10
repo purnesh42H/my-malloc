@@ -17,8 +17,9 @@ void *realloc(void *p, size_t size) {
 				b->free = 0;
 				munlock(b, s);
 			} else {
+				printf("Failed to lock\n");
 				errno = ENOMEM; // Error if no more memory can be allocated
- 	 	 	 	return(NULL);
+ 	 	 	 	return (NULL);
 			}
 		} else {
 			if (b->next && b->next->free && (b->size + block_size() + b->next->size) >= s) { // try joining the next free chunk
@@ -33,6 +34,7 @@ void *realloc(void *p, size_t size) {
 			} else {
 					newp = malloc(s); // allocate the memory
 					if (!newp) {
+						printf("No block\n");
 						errno = ENOMEM;
 			 			return (NULL);
 					}
@@ -41,6 +43,7 @@ void *realloc(void *p, size_t size) {
 						copy_block(b, new); // copy data from previous to new block
 						munlock(new, s);
 					} else {
+						printf("Failed to lock\n");
 						errno = ENOMEM; // Error if no more memory can be allocated
 		 	 	 	 	return(NULL);
 					}
@@ -50,6 +53,7 @@ void *realloc(void *p, size_t size) {
     	}
  			return (p); // return the old one
 		}
+		printf("Invalid pointer\n");
 		errno = ENOMEM;
 		return (NULL);
 }

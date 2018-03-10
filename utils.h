@@ -34,6 +34,7 @@ struct my_malloc_arena {
 
 /* The function returns a fitting chunk, or NULL if none where found. After the execution, the
    argument last points to the last visited chunk. */
+int is_two_power(size_t s);
 int get_two_power(size_t s);
 malloc_arena find_arena(size_t size);
 block join_free_chunks(block b);
@@ -56,8 +57,8 @@ int valid_address(malloc_arena arena, void *p);
 
 extern size_t max_arena_size;
 extern void *arena_head;
-extern int max_arenas;
-extern int current_arenas;
+extern long int max_arenas;
+extern long int current_arenas;
 extern const int SMALLEST_BLOCK;
 
 #endif

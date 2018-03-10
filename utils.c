@@ -1,10 +1,20 @@
 #include "utils.h"
 
 size_t max_arena_size = 0;
-int max_arenas = 0;
-int current_arenas = 0;
+long int max_arenas = 0;
+long int current_arenas = 0;
 void *arena_head = NULL;
 const int SMALLEST_BLOCK = 128;
+
+int is_two_power(size_t s) {
+	while (s > 1) {
+		if (s % 2 != 0) {
+			return -1;
+		}
+		s = s / 2;
+	}
+	return 0;
+}
 
 int get_two_power(size_t s) {
 	int power = 0;
@@ -18,12 +28,13 @@ int get_two_power(size_t s) {
 malloc_arena find_arena(size_t size) {
 	malloc_arena start = arena_head;
 
-	if(current_arenas < max_arenas) {
+	if(current_arenas <= max_arenas) {
 		while(start->next != NULL) {
 			start = start->next;
 		}
 		return start;
 	} else {
+		printf("No arena\n");
 		return NULL;
 	}
 }
@@ -140,12 +151,12 @@ block insert_block(malloc_arena arena, size_t s) {
 	}
 
 	if(!start) {
+		printf("No block\n");
 		return NULL;
 	}
 
 	split_block(arena, start, s);
 	start->free = 0;
-
 	return start;
 }
 
@@ -195,12 +206,6 @@ void copy_block(block src, block dest) {
 
 malloc_arena create_arena(size_t size) {
 	malloc_arena arena;
-	if (!max_arena_size) {
-		max_arena_size = sysconf(_SC_PAGESIZE) * sysconf(_SC_PAGESIZE);
-	}
-	if (!max_arenas) {
-		max_arenas = sysconf(_SC_NPROCESSORS_ONLN);
-	}
 	size_t request_memory = max_arena_size;
 	while (request_memory < size) {
 		request_memory += max_arena_size;
@@ -209,9 +214,11 @@ malloc_arena create_arena(size_t size) {
 	if (!arena_head) {
 		void *addr = mmap(NULL, request_memory, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 		if (addr == MAP_FAILED) {
+			printf("MMAP failed\n");
 			return NULL;
 		}
 		arena_head = addr;
+
 		arena = (malloc_arena)addr;
 		arena->size = request_memory;
 		arena->next = NULL;
@@ -219,10 +226,12 @@ malloc_arena create_arena(size_t size) {
 	} else {
 		malloc_arena start = find_arena(size);
 		if (!start) {
+			printf("No arena\n");
 			return NULL;
 		}
 		void *addr = mmap(start->data, request_memory, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 		if (addr == MAP_FAILED) {
+			printf("MMAP failed\n");
 			return NULL;
 		}
 		arena = (malloc_arena)addr;
