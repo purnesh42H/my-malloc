@@ -8,6 +8,8 @@
 
 - int posix_memalign(void **memptr, size_t alignment, size_t size);
 - void *memalign(size_t alignment, size_t size);
+- struct mallinfo mallinfo();
+- void malloc_stats(void);
 
 # How to run
 - Existing tests
@@ -24,7 +26,7 @@
 # Design
 ## Code Strucure
 - There are two header files utils.h and malloc.h
-- Utils.h contains all the helper functions like aligning the size, splitting blocks etc.
+- utils.h contains all the helper functions like aligning the size, splitting blocks etc.
 - malloc.h contains the functions of malloc library malloc, calloc, realloc, free, memalign, posix_memalign
 - Each of the malloc functions are in separate .c files
 
@@ -33,17 +35,13 @@
 typedef struct memory_block *block;
 
 struct memory_block {
-	size_t size;     // size of the block (8-byte aligned)
-	block next;  	   // Address of the next block. It is important because we want to
-              	   // traverse from one block to another to find the free block and also join the
-            		   // free blocks if they are adjacent to each other to decrease fregmentation
-	block prev; 	   // Address of the previous block. This is very important during free to combine adjacent free blocks
-	int free; 	     // To check if the block is free
-  int buddy_order; // Order of the block according to buddy allocation
-	void *ptr; 	     // This pointer stores the address of the memory block's data i.e. end of block's address.
-           		     // It is useful to validate the block's address as it tells us that the
-			             // block is alloced to through this malloc library.
-	char data [1]; 	 // Meta data for each block. The pointer to this mark the end of block.
+	size_t size; 			/* Block size */
+	block next;			/* Next block */
+	block prev;			/* Previous block */
+	int free;			/* Block is free or not */
+	int buddy_order;		/* Block's buddy order */
+	void *ptr;			/* Block's pointer pointing to the arena */
+	char data [1];
 };
 ```
 
@@ -52,20 +50,45 @@ struct memory_block {
 typedef struct my_malloc_arena *malloc_arena;
 
 struct my_malloc_arena {
-	block start;
-	size_t size;
-	malloc_arena next;
-	malloc_arena prev;
+	block start;		/* Starting block of the arena */
+	size_t size;		/* Size of the arena */
+	malloc_arena next;    	/* Next arena */
+	malloc_arena prev;    	/* Previous arena */
+	int ordblks;      	/* Number of free chunks */
+	int hblks;     		/* Number of mmapped regions */
+	int hblkhd;    		/* Space allocated in mmapped regions (bytes) */
+	int usmblks;   		/* Maximum total allocated space (bytes) */
+	int uordblks;       	/* Total allocated space (bytes) */
+	int fordblks;       	/* Total free space (bytes) */
 	pthread_mutex_t lock;
 	char data[1];
 };
 ```
 
+## Mallinfo struct
+```c
+struct mallinfo {
+	int arenas; 		        /* Total arenas */
+	int ordblks;   			/* Number of free chunks */
+	int hblks;    			/* Number of mmapped regions */
+	int hblkhd;   			/* Space allocated in mmapped regions (bytes) */
+	int usmblks;   			/* Maximum total allocated space (bytes) */
+	int uordblks;  			/* Total allocated space (bytes) */
+	int fordblks;  			/* Total free space (bytes) */
+};
+```
+
 ## Data Structure
-- I used doubly linked list to store the meta information about each blocks
-- Keeping track of next and previous block helped me join free blocks in O(n) runtime.
-- My struct stores the buddy order which makes the check for required order block O(1)
-- My struct stores also stores free status of each block
+- Memory Block Struct
+	- I used doubly linked list to store the meta information about each blocks
+	- Keeping track of next and previous block helped me join free blocks in O(n) runtime.
+	- My struct stores the buddy order which makes the check for required order block O(1)
+	- My struct stores also stores free status of each block
+
+- Memory Arena Struct 
+	- My struct is also a doubly linked list node
+	- My struct also has a pthread_mutex_t lock, which is used to lock the arena in case of allocation and deallocation
+	- It also contains fields required for malloc stats
 
 ## Malloc Logic
 - First 8-byte align the requested size
@@ -75,15 +98,14 @@ struct my_malloc_arena {
 – If new chunk is found,
   - Try to split the block using Buddy
 	- Mark the chunk as used (b->free=0;)
-	– if no fitting block found according to buddy, I extend the heap.
+	– if no fitting block found according to buddy, current implementation returns NULL indicating no more blocks can be allocated in the arena.
 
 	Note while finding the new block I put the pointer to the last visited chunk in
 	last, so I can access it during the extension without traversing the whole list
-	again. Otherwise I extend the heap (which is empty at that point.)
-	Note that the function extend heap works here with last=NULL.
+	again.
 
 ## Free logic
-- Validate the address using the block's pointer. If the pointer is pointing to end of meta block, it is a valid pointer
+- Validate the address using the block's pointer. If the pointer is pointing to the arena in which it was allocated, it is a valid pointer
 - If valid, get the block pointed by pointer. Free the block.
 - Join the buddy blocks if they are also free and merge them to a single block. Increase the order and size accordingly.
 
@@ -93,3 +115,4 @@ struct my_malloc_arena {
 - the split_block function in [utils.c](utils.c) cut the block passed in argument to make data block of the wanted size and all splitted blocks become part of linked list, so that next time there wont be need to split if any of the existing can satisfy the requested memory.
 - There is at least one malloc arena per CPU core. This library will detect the total number of CPU cores and create that many arenas.
 - Each thread allocates/deallocates from one of these per-cpu arenas.
+- To support fork and thread safe allocation/deallocation, I assign thread specific arena to each thread using __thread malloc_arena arena;
