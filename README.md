@@ -50,16 +50,18 @@ struct memory_block {
 typedef struct my_malloc_arena *malloc_arena;
 
 struct my_malloc_arena {
-	block start;		/* Starting block of the arena */
-	size_t size;		/* Size of the arena */
-	malloc_arena next;    	/* Next arena */
-	malloc_arena prev;    	/* Previous arena */
-	int ordblks;      	/* Number of free chunks */
-	int hblks;     		/* Number of mmapped regions */
-	int hblkhd;    		/* Space allocated in mmapped regions (bytes) */
-	int usmblks;   		/* Maximum total allocated space (bytes) */
+	block start;					/* Starting block of the arena */
+	size_t size;					/* Size of the arena */
+	malloc_arena next;    /* Next arena */
+	malloc_arena prev;    /* Previous arena */
+	int ordblks;      		/* Number of free chunks */
+	int hblks;     				/* Number of mmapped regions */
+	int hblkhd;    				/* Space allocated in mmapped regions (bytes) */
+	int usmblks;   				/* Maximum total allocated space (bytes) */
 	int uordblks;       	/* Total allocated space (bytes) */
 	int fordblks;       	/* Total free space (bytes) */
+	int allocation_req;
+  int free_req;
 	pthread_mutex_t lock;
 	char data[1];
 };
@@ -85,7 +87,7 @@ struct mallinfo {
 	- My struct stores the buddy order which makes the check for required order block O(1)
 	- My struct stores also stores free status of each block
 
-- Memory Arena Struct 
+- Memory Arena Struct
 	- My struct is also a doubly linked list node
 	- My struct also has a pthread_mutex_t lock, which is used to lock the arena in case of allocation and deallocation
 	- It also contains fields required for malloc stats
@@ -94,7 +96,7 @@ struct mallinfo {
 - If arena is null, create arena using mmap by requesting size in multiple of page size
 - First 8-byte align the requested size
 - If arena->start is initialized, search for a free chunk wide enough.
-- If arena->start is not initialized, that means its the first request for arena and new block will become start of the arena. 
+- If arena->start is not initialized, that means its the first request for arena and new block will become start of the arena.
 - While searching, keep splitting the blocks using the buddy logic. Read Buddy Allocation [here](https://en.wikipedia.org/wiki/Buddy_memory_allocation)
 - Assign the requested memory to the block wide enough.
 – If new chunk is found,

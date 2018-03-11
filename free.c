@@ -14,6 +14,7 @@ void free(void *p) {
 		arena->hblks -= 1;
 		arena->uordblks -= s;
 		arena->fordblks += s;
+		arena->free_req += 1;
 		pthread_mutex_unlock(&arena->lock); //unlocking the arena
 	}
 }

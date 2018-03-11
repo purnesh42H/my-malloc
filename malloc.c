@@ -40,6 +40,7 @@ void *malloc(size_t size) {
 	 	 	return(NULL);
 	 	}
  	}
+	arena->allocation_req += 1;
 	arena->ordblks += 1;
 	arena->hblkhd += s;
 	arena->hblks += 1;

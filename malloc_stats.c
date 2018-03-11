@@ -10,7 +10,7 @@ void malloc_stats(void) {
 	int i = 0;
 	while(start != NULL) {
 		printf("Arena: %d\n", i);
-		printf("Number of free chunks: %d\nNumber of mmapped regions: %d\nSpace allocated in mmapped regions (bytes): %u\nMaximum total allocated space (bytes): %u\nTotal allocated space (bytes): %u\nTotal free space (bytes): %u\n\n", start->ordblks, start->hblks, start->hblkhd, start->usmblks, start->uordblks, start->fordblks);
+		printf("Number of free chunks: %d\nNumber of mmapped regions: %d\nSpace allocated in mmapped regions (bytes): %u\nMaximum total allocated space (bytes): %u\nTotal allocated space (bytes): %u\nTotal free space (bytes): %u\nTotal allocation requests: %d\nTotal free requests: %d\n\n", start->ordblks, start->hblks, start->hblkhd, start->usmblks, start->uordblks, start->fordblks, start->allocation_req, start->free_req);
 		i++;
 		start = start->next;
 	}

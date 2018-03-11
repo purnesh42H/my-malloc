@@ -261,6 +261,8 @@ malloc_arena create_arena(size_t size) {
 	arena->usmblks = 0;
 	arena->uordblks = 0;
 	arena->fordblks = arena->size;
+	arena->allocation_req = 0;
+	arena->free_req = 0;
 	current_arenas += 1;
 	return arena;
 }
