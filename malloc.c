@@ -13,7 +13,6 @@ void *malloc(size_t size) {
 	if (!max_arenas) {
 		max_arenas = sysconf(_SC_NPROCESSORS_ONLN);
 	}
-
 	block start;
 	size_t s;
 	s = align8(size); // 8-byte alignment for every size
@@ -41,6 +40,14 @@ void *malloc(size_t size) {
 	 	 	return(NULL);
 	 	}
  	}
-	
+	arena->ordblks += 1;
+	arena->hblkhd += s;
+	arena->hblks += 1;
+	if (s > arena->usmblks) {
+		arena->usmblks = s;
+	}
+	arena->uordblks += s;
+	arena->fordblks -= s;
+
  	return(start->data); // returning the starting address of the block
 }

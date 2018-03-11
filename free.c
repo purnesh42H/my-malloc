@@ -7,7 +7,13 @@ void free(void *p) {
 		b = get_block(p); // get the block to free
 		pthread_mutex_lock(&arena->lock); //locking the arena before allocation
 		b->free = 1;
+		size_t s = b->size;
 		deallocate(arena, b);
+		arena->ordblks += 1;
+		arena->hblkhd -= s;
+		arena->hblks -= 1;
+		arena->uordblks -= s;
+		arena->fordblks += s;
 		pthread_mutex_unlock(&arena->lock); //unlocking the arena
 	}
 }

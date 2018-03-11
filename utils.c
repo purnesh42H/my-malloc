@@ -87,7 +87,6 @@ void deallocate(malloc_arena arena, block b) {
 	if(!b->next) {
 		if (b->prev) {
 			b = buddy_join(arena, b);
-			b->free = 1;
 		} else {
 			if(!arena->prev) {
 				if(arena->next) {
@@ -105,7 +104,6 @@ void deallocate(malloc_arena arena, block b) {
 		}
 	} else {
 		b = buddy_join(arena, b);
-		b->free = 1;
 	}
 }
 
@@ -125,6 +123,7 @@ block buddy_join(malloc_arena arena, block b) {
 	}
 	while(b->next && b->next->free) {
 		b = join_free_chunks(arena, b);
+		arena->ordblks -= 1;
 	}
 	return b;
 }
@@ -145,7 +144,7 @@ size_t block_size() {
 
 size_t arena_size() {
 	// Since its a 64 bit machine
-	return 72;
+	return 96;
 }
 
 /* Get the block from and addr */
@@ -161,6 +160,8 @@ block insert_block(malloc_arena arena, size_t s) {
 		start = (block)arena->data;
 		arena->start = start;
 		allocate(arena, arena->start, arena->size, NULL);
+		arena->ordblks = 1;
+		arena->fordblks = arena->size;
 	} else {
 		last = arena->start;
 		start = find_free_block(arena, &last, s);
@@ -254,6 +255,12 @@ malloc_arena create_arena(size_t size) {
 		arena->prev = start;
 		arena->size = request_memory;
 	}
+	arena->ordblks = 0;
+	arena->hblkhd = 0;
+	arena->hblks = 0;
+	arena->usmblks = 0;
+	arena->uordblks = 0;
+	arena->fordblks = arena->size;
 	current_arenas += 1;
 	return arena;
 }
@@ -262,6 +269,7 @@ void split_block(malloc_arena arena, block b, size_t s) {
 	int required_order = get_buddy_order(s);
 	while (b->buddy_order != required_order) {
 		buddy_split(arena, b);
+		arena->ordblks += 1;
 	}
 }
 

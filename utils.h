@@ -14,20 +14,26 @@ typedef struct memory_block *block;
 typedef struct my_malloc_arena *malloc_arena;
 
 struct memory_block {
-	size_t size;
-	block next;
-	block prev;
-	int free;
-	int buddy_order;
-	void *ptr;
+	size_t size; 				/* Block size */
+	block next;					/* Next block */
+	block prev;					/* Previous block */
+	int free;						/* Block is free or not */
+	int buddy_order;		/* Block's buddy order */
+	void *ptr;					/* Block's pointer pointing to the arena */
 	char data [1];
 };
 
 struct my_malloc_arena {
-	block start;
-	size_t size;
-	malloc_arena next;
-	malloc_arena prev;
+	block start;					/* Starting block of the arena */
+	size_t size;					/* Size of the arena */
+	malloc_arena next;    /* Next arena */
+	malloc_arena prev;    /* Previous arena */
+	int ordblks;      		/* Number of free chunks */
+	int hblks;     				/* Number of mmapped regions */
+	int hblkhd;    				/* Space allocated in mmapped regions (bytes) */
+	int usmblks;   				/* Maximum total allocated space (bytes) */
+	int uordblks;       	/* Total allocated space (bytes) */
+	int fordblks;       	/* Total free space (bytes) */
 	pthread_mutex_t lock;
 	char data[1];
 };
@@ -60,5 +66,6 @@ extern void *arena_head;
 extern long int max_arenas;
 extern long int current_arenas;
 extern const int SMALLEST_BLOCK;
+extern size_t current_mmap_allocation;
 
 #endif

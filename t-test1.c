@@ -18,9 +18,9 @@
 #define TEST 0
 #endif
 
-#define N_TOTAL		100
+#define N_TOTAL		10
 #ifndef N_THREADS
-#define N_THREADS	2
+#define N_THREADS	1
 #endif
 #ifndef N_TOTAL_PRINT
 #define N_TOTAL_PRINT 50
@@ -650,6 +650,7 @@ int main(int argc, char *argv[])
 #if USE_MALLOC
 	malloc_stats();
 #endif
-	printf("Done.\n");
+	printf("Done.\n\n");
+	malloc_stats();
 	return 0;
 }
