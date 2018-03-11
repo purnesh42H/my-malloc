@@ -91,8 +91,10 @@ struct mallinfo {
 	- It also contains fields required for malloc stats
 
 ## Malloc Logic
+- If arena is null, create arena using mmap by requesting size in multiple of page size
 - First 8-byte align the requested size
-- If heap_start is initialized, search for a free chunk wide enough. This will become start of the heap
+- If arena->start is initialized, search for a free chunk wide enough.
+- If arena->start is not initialized, that means its the first request for arena and new block will become start of the arena. 
 - While searching, keep splitting the blocks using the buddy logic. Read Buddy Allocation [here](https://en.wikipedia.org/wiki/Buddy_memory_allocation)
 - Assign the requested memory to the block wide enough.
 – If new chunk is found,
