@@ -34,19 +34,18 @@ malloc_arena find_arena(size_t size) {
 		}
 		return start;
 	} else {
-		printf("No arena\n");
 		return NULL;
 	}
 }
 
-block join_free_chunks(block b) {
+block join_free_chunks(malloc_arena arena, block b) {
 	if (b->next && b->next->free) {
 		b->size += b->next->size + block_size();
 		b->next = b->next->next;
 		if (b->next) {
 			b->next->prev = b;
 		}
-		b->buddy_order += 1;
+		b->buddy_order = get_buddy_order(b->size);
 	}
 	return (b);
 }
@@ -87,28 +86,45 @@ void allocate(malloc_arena arena, block b, size_t s, block last) {
 void deallocate(malloc_arena arena, block b) {
 	if(!b->next) {
 		if (b->prev) {
-			buddy_join(b);
+			b = buddy_join(arena, b);
+			b->free = 1;
 		} else {
-			if(arena->prev) {
-				arena->prev->next = arena->next;
+			if(!arena->prev) {
+				if(arena->next) {
+					arena->next->prev = NULL;
+					arena_head = (void *)arena->next;
+				} else {
+					arena_head = NULL;
+				}
+				void *addr = (void *)arena;
+				size_t length = arena->size;
+				arena = NULL;
+				munmap(addr, length);
+				current_arenas -= 1;
 			}
-			void *addr = (void *)arena;
-			size_t length = arena->size;
-			arena = NULL;
-			munmap(addr, length);
-			current_arenas -= 1;
 		}
 	} else {
-		buddy_join(b);
+		b = buddy_join(arena, b);
+		b->free = 1;
 	}
 }
 
-block buddy_join(block b) {
+block buddy_join(malloc_arena arena, block b) {
 	while (b->prev && b->prev->free) {
 		b = b->prev;
+		void *p = (void *)b->prev;
+		if (p < (void *)arena->start || p > (void *)(arena->data + arena->size)) {
+			b->prev = NULL;
+			break;
+		}
+	}
+	void *p = (void *)b->next;
+	if (p < (void *)arena->start || p > (void *)(arena->data + arena->size)) {
+		b->next = NULL;
+		return (b);
 	}
 	while(b->next && b->next->free) {
-		b = join_free_chunks(b);
+		b = join_free_chunks(arena, b);
 	}
 	return b;
 }
@@ -151,7 +167,7 @@ block insert_block(malloc_arena arena, size_t s) {
 	}
 
 	if(!start) {
-		printf("No block\n");
+		printf("No block for size %zd\n", s);
 		return NULL;
 	}
 
@@ -164,8 +180,8 @@ block find_free_block(malloc_arena arena, block *last, size_t size) {
 	int order = get_buddy_order(size);
 	block start = arena->start;
 	while(start && !(start->free && start->buddy_order == order && start->size >= size)) {
-		long long int diffr = (void *)start->next - (void *)(arena->data + arena->size);
-		if (start->next && diffr >= 0) {
+		void *p = (void *)start->next;
+		if (p < (void *)arena->start || p > (void *)(arena->data + arena->size)) {
 			start->next = NULL;
 			*last = start;
 			start = NULL;
@@ -178,13 +194,13 @@ block find_free_block(malloc_arena arena, block *last, size_t size) {
 	if (!start) {
 		start = arena->start;
 		while(start && !(start->free && start->buddy_order > order && (start->size)/2 >= size)) {
-			long long int diffr = (void *)start->next - (void *)(arena->data + arena->size);
-			if (start->next && diffr >= 0) {
+			void *p = (void *)start->next;
+			if (p < (void *)arena->start || p > (void *)(arena->data + arena->size)) {
 				start->next = NULL;
-				start = NULL;
 				*last = start;
+				start = NULL;
 				break;
-		  }
+			}
 			*last = start;
 			start = start->next;
 		}
@@ -217,16 +233,15 @@ malloc_arena create_arena(size_t size) {
 			printf("MMAP failed\n");
 			return NULL;
 		}
-		arena_head = addr;
-
 		arena = (malloc_arena)addr;
 		arena->size = request_memory;
 		arena->next = NULL;
 		arena->prev = NULL;
+		arena_head = (void *)arena;
 	} else {
 		malloc_arena start = find_arena(size);
 		if (!start) {
-			printf("No arena\n");
+			printf("No more arena available\n");
 			return NULL;
 		}
 		void *addr = mmap(start->data, request_memory, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);

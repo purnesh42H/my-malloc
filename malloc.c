@@ -41,5 +41,6 @@ void *malloc(size_t size) {
 	 	 	return(NULL);
 	 	}
  	}
+	
  	return(start->data); // returning the starting address of the block
 }

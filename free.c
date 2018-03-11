@@ -6,6 +6,7 @@ void free(void *p) {
 	if (arena && valid_address(arena, p)) {
 		b = get_block(p); // get the block to free
 		pthread_mutex_lock(&arena->lock); //locking the arena before allocation
+		b->free = 1;
 		deallocate(arena, b);
 		pthread_mutex_unlock(&arena->lock); //unlocking the arena
 	}

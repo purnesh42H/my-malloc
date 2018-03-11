@@ -24,7 +24,7 @@ void *realloc(void *p, size_t size) {
 		} else {
 			if (b->next && b->next->free && (b->size + block_size() + b->next->size) >= s) { // try joining the next free chunk
 				if (mlock(b, s) == 0) {
-					buddy_join(b);
+					b = buddy_join(arena, b);
 					if (b->buddy_order > get_buddy_order(s)) {
 						split_block (arena, b, s);
 					}

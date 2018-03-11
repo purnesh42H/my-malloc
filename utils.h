@@ -37,12 +37,12 @@ struct my_malloc_arena {
 int is_two_power(size_t s);
 int get_two_power(size_t s);
 malloc_arena find_arena(size_t size);
-block join_free_chunks(block b);
+block join_free_chunks(malloc_arena arena, block b);
 int get_buddy_order(size_t s);
 void buddy_split(malloc_arena arena, block b);
 void allocate(malloc_arena arena, block b, size_t s, block last);
 void deallocate(malloc_arena arena, block b);
-block buddy_join(block b);
+block buddy_join(malloc_arena arena, block b);
 size_t alignn(size_t s, size_t alignment);
 size_t align8(size_t s);
 size_t block_size();
