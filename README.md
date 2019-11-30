@@ -61,7 +61,7 @@ struct my_malloc_arena {
 	int uordblks;       	/* Total allocated space (bytes) */
 	int fordblks;       	/* Total free space (bytes) */
 	int allocation_req;
-  int free_req;
+        int free_req;
 	pthread_mutex_t lock;
 	char data[1];
 };
