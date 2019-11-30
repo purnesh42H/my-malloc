@@ -50,16 +50,16 @@ struct memory_block {
 typedef struct my_malloc_arena *malloc_arena;
 
 struct my_malloc_arena {
-	block start;					/* Starting block of the arena */
-	size_t size;					/* Size of the arena */
-	malloc_arena next;    /* Next arena */
-	malloc_arena prev;    /* Previous arena */
+	block start;			/* Starting block of the arena */
+	size_t size;			/* Size of the arena */
+	malloc_arena next;    		/* Next arena */
+	malloc_arena prev;    		/* Previous arena */
 	int ordblks;      		/* Number of free chunks */
-	int hblks;     				/* Number of mmapped regions */
-	int hblkhd;    				/* Space allocated in mmapped regions (bytes) */
-	int usmblks;   				/* Maximum total allocated space (bytes) */
-	int uordblks;       	/* Total allocated space (bytes) */
-	int fordblks;       	/* Total free space (bytes) */
+	int hblks;     			/* Number of mmapped regions */
+	int hblkhd;    			/* Space allocated in mmapped regions (bytes) */
+	int usmblks;   			/* Maximum total allocated space (bytes) */
+	int uordblks;       		/* Total allocated space (bytes) */
+	int fordblks;       		/* Total free space (bytes) */
 	int allocation_req;
         int free_req;
 	pthread_mutex_t lock;
